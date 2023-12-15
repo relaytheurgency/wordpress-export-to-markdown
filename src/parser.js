@@ -18,14 +18,19 @@ async function parseFilePromise(config) {
 	const posts = collectPosts(data, postTypes, config);
 
 	const images = [];
+	const files = [];
 	if (config.saveAttachedImages) {
 		images.push(...collectAttachedImages(data));
 	}
 	if (config.saveScrapedImages) {
 		images.push(...collectScrapedImages(data, postTypes));
 	}
+	if (config.saveAttachedFiles) {
+        files.push(...collectAttachedFiles(data, postTypes));
+	}
 
 	mergeImagesIntoPosts(images, posts);
+	mergeFilesIntoPosts(files, posts);
 
 	return posts;
 }
@@ -63,7 +68,8 @@ function collectPosts(data, postTypes, config) {
 					slug: getPostSlug(post),
 					coverImageId: getPostCoverImageId(post),
 					type: postType,
-					imageUrls: []
+					imageUrls: [],
+					fileUrls: []
 				},
 				frontmatter: {
 					title: getPostTitle(post),
@@ -154,6 +160,19 @@ function collectAttachedImages(data) {
 	return images;
 }
 
+function collectAttachedFiles(data) {
+	const files = getItemsOfType(data, 'attachment')
+		.filter(file => (/\.(?!(gif|jpe?g|png)).{3,4}$/i).test(file.attachment_url[0]))
+		.map(file => ({
+			id: file.post_id[0],
+			postId: file.post_parent[0],
+			url: file.attachment_url[0]
+		}));
+
+	console.log(files.length + ' attached files found.');
+	return files;
+}
+
 function collectScrapedImages(data, postTypes) {
 	const images = [];
 	postTypes.forEach(postType => {
@@ -197,6 +216,23 @@ function mergeImagesIntoPosts(images, posts) {
 
 			if (shouldAttach && !post.meta.imageUrls.includes(image.url)) {
 				post.meta.imageUrls.push(image.url);
+			}
+		});
+	});
+}
+
+function mergeFilesIntoPosts(files, posts) {
+	files.forEach(file => {
+		posts.forEach(post => {
+			let shouldAttach = false;
+
+			// this image was uploaded as an attachment to this post
+			if (file.postId === post.meta.id) {
+				shouldAttach = true;
+			}
+
+			if (shouldAttach && !post.meta.fileUrls.includes(file.url)) {
+				post.meta.fileUrls.push(file.url);
 			}
 		});
 	});

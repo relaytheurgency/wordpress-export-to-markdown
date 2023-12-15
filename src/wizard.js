@@ -70,6 +70,13 @@ const options = [
 		default: true
 	},
 	{
+		name: 'save-attached-files',
+		aliases: ['savefiles'],
+		type: 'boolean',
+		description: 'Save files attached to posts',
+		default: true
+	},
+	{
 		name: 'include-other-types',
 		type: 'boolean',
 		description: 'Include custom post types and pages',
